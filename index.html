@@ -156,6 +156,8 @@
         display: flex; align-items: center; justify-content: center;
         transition: all 0.3s; opacity: 0.6;
         text-align: center; line-height: 1; 
+        pointer-events: auto;
+        user-select: none;
     }
     #nos-btn.ready {
         background: radial-gradient(circle, #ff0000, #990000);
@@ -250,7 +252,7 @@
 
 <div id="nos-container">
     <div id="nos-bar-bg"><div id="nos-bar-fill"></div></div>
-    <div id="nos-btn" ontouchstart="activateNOS(event)">NOS</div>
+    <div id="nos-btn" ontouchstart="activateNOS(event)" onmousedown="activateNOS(event)">NOS</div>
 </div>
 
 <div id="pauseScreen" class="screen-overlay">
@@ -281,7 +283,7 @@
 
 <div id="vipLoginScreen" class="screen-overlay">
     <h1>ACCÈS VIP (Mot de Passe)</h1>
-    <p>Entrez le mot de passe secret reçu lors de l'inscription par mail sur le canal LESDRIVERS.</p>
+    <p>Entrez le mot de passe secret (LYON).</p>
     <input type="password" id="vipPasswordInput" placeholder="Mot de passe" style="width:250px;">
     
     <button id="loginBtn" onclick="loginVipUser()">SE CONNECTER</button>
@@ -750,8 +752,9 @@
         if(e.code === 'KeyA') {
             triggerBrake(e);
         }
-        // TOUCHE Z = NOS
-        if(e.code === 'KeyZ') {
+        // TOUCHE Z (AZERTY SUPPORT)
+        // On vérifie la lettre 'z' (touche Z sur azerty, W sur qwerty)
+        if(e.key.toLowerCase() === 'z') {
             activateNOS(e);
         }
     });
@@ -828,13 +831,21 @@
             isJumping = true; jumpEndTime = Date.now() + 1500;
             return;
         }
-        if(currentVipMode && currentVipMode.id === "BOND" && nosLevel >= 100) {
-            projectiles.push({x: player.x + CAR_W/2 - 5, y: player.y, w: 10, h: 20});
-            nosLevel = 0;
-            nosBarFill.style.width = "0%";
-            nosBtn.classList.remove('ready');
-            return;
+        
+        // --- LOGIQUE JAMES BOND (15 missiles, un par un) ---
+        if(currentVipMode && currentVipMode.id === "BOND") {
+            if (bondAmmo > 0) {
+                // On crée 1 missile
+                projectiles.push({x: player.x + CAR_W/2 - 5, y: player.y, w: 10, h: 20});
+                // On enlève 1 munition
+                bondAmmo--;
+                // Mise à jour immédiate du bouton
+                nosBtn.innerText = bondAmmo;
+            }
+            return; // On arrête la fonction ici
         }
+        // -------------------------------------------------------------
+
         if(currentVipMode && currentVipMode.id === "SPECTRE" && nosLevel >= 100) {
             isInvincible = true; invincibilityTimer = Date.now() + 3000;
             nosLevel = 0;
@@ -1314,7 +1325,7 @@
                      // Cela veut dire que tu as passé 50% de sa voiture.
                      
                      // Point critique : Le haut de l'ennemi (obs.y) + 50% de sa hauteur
-                     let safeZoneY = obs.y + (obsH * 0.70); 
+                     let safeZoneY = obs.y + (obsH * 0.50); 
 
                      // Si tes fesses sont devant cette ligne, c'est validé !
                      if (player.y + pH < safeZoneY) {
@@ -1333,6 +1344,7 @@
                     else { 
                         isInvincible = true; invincibilityTimer = now + 2000; 
                         obs.y += 100; // Move obstacle down to prevent immediate re-collision
+                        // ALERT WINDOW REMOVED HERE
                     } 
                 }
             }
